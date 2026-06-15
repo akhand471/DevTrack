@@ -19,8 +19,8 @@ const Analytics = () => {
           analyticsService.getWeeklyProgress(),
         ])
 
-        if (topicRes.success) setTopicData(topicRes.data)
-        if (weeklyRes.success) setWeeklyData(weeklyRes.data)
+        if (topicRes.success) setTopicData(topicRes.data.topicPerformance || [])
+        if (weeklyRes.success) setWeeklyData(weeklyRes.data.weeklyProgress || [])
       } catch (err) {
         setError('Failed to load analytics data')
         console.error(err)
