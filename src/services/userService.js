@@ -1,33 +1,25 @@
 import api from './api'
 
-/**
- * User service — profile and stats operations
- */
 const userService = {
-    /**
-     * Get full user profile
-     */
-    getProfile: async () => {
-        const res = await api.get('/api/user/profile')
-        return res.data
-    },
+  getProfile: async () => {
+    const { data } = await api.get('/api/user/profile')
+    return data
+  },
 
-    /**
-     * Update user profile
-     * @param {Object} data - { name, bio, githubUsername, location }
-     */
-    updateProfile: async (data) => {
-        const res = await api.put('/api/user/profile', data)
-        return res.data
-    },
+  updateProfile: async (updates) => {
+    const { data } = await api.put('/api/user/profile', updates)
+    return data
+  },
 
-    /**
-     * Get user stats (streaks, days since joining, etc.)
-     */
-    getStats: async () => {
-        const res = await api.get('/api/user/stats')
-        return res.data
-    },
+  getStats: async () => {
+    const { data } = await api.get('/api/user/stats')
+    return data
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const { data } = await api.put('/api/user/change-password', { currentPassword, newPassword })
+    return data
+  },
 }
 
 export default userService

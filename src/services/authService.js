@@ -1,46 +1,44 @@
 import api from './api'
 
 const authService = {
-    register: async (userData) => {
-        try {
-            const response = await api.post('/api/auth/register', userData)
-            // In dev mode, a token is returned (auto-verified) — store it
-            if (response.data.data?.token) {
-                localStorage.setItem('auth_token', response.data.data.token)
-            }
-            return response.data
-        } catch (error) {
-            throw new Error(
-                error.response?.data?.error || 'Registration failed. Please try again.'
-            )
-        }
-    },
+  register: async (userData) => {
+    const { data } = await api.post('/api/auth/register', userData)
+    return data
+  },
 
-    login: async (credentials) => {
-        try {
-            const response = await api.post('/api/auth/login', credentials)
-            if (response.data.success && response.data.data.token) {
-                localStorage.setItem('auth_token', response.data.data.token)
-            }
-            return response.data
-        } catch (error) {
-            const err = new Error(
-                error.response?.data?.error || 'Login failed. Please try again.'
-            )
-            err.status = error.response?.status
-            throw err
-        }
-    },
+  login: async (credentials) => {
+    const { data } = await api.post('/api/auth/login', credentials)
+    return data
+  },
 
-    logout: () => {
-        localStorage.removeItem('auth_token')
-    },
+  logout: async () => {
+    await api.post('/api/auth/logout')
+  },
 
-    getMe: async () => {
-        const response = await api.get('/api/auth/me')
-        return response.data
-    },
+  getMe: async () => {
+    const { data } = await api.get('/api/auth/me')
+    return data
+  },
+
+  verifyEmail: async (token) => {
+    const { data } = await api.get(`/api/auth/verify-email?token=${token}`)
+    return data
+  },
+
+  resendVerification: async (email) => {
+    const { data } = await api.post('/api/auth/resend-verification', { email })
+    return data
+  },
+
+  forgotPassword: async (email) => {
+    const { data } = await api.post('/api/auth/forgot-password', { email })
+    return data
+  },
+
+  resetPassword: async (token, password) => {
+    const { data } = await api.post('/api/auth/reset-password', { token, password })
+    return data
+  },
 }
 
 export default authService
-

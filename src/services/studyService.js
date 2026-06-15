@@ -1,29 +1,23 @@
 import api from './api'
 
 const studyService = {
-    logSession: async (sessionData) => {
-        const response = await api.post('/api/study/log-session', sessionData)
-        return response.data
-    },
+  /** Log a new study session */
+  logSession: async (sessionData) => {
+    const { data } = await api.post('/api/study/log-session', sessionData)
+    return data
+  },
 
-    getSessions: async (filters = {}) => {
-        // Convert filter object to query string points
-        const params = new URLSearchParams()
-        Object.entries(filters).forEach(([key, value]) => {
-            if (value) params.append(key, value)
-        })
+  /** Get sessions with optional filters */
+  getSessions: async (filters = {}) => {
+    const { data } = await api.get('/api/study/sessions', { params: filters })
+    return data
+  },
 
-        const queryString = params.toString()
-        const url = queryString ? `/api/study/sessions?${queryString}` : '/api/study/sessions'
-
-        const response = await api.get(url)
-        return response.data
-    },
-
-    deleteSession: async (id) => {
-        const response = await api.delete(`/api/study/session/${id}`)
-        return response.data
-    }
+  /** Delete a session by ID */
+  deleteSession: async (id) => {
+    const { data } = await api.delete(`/api/study/session/${id}`)
+    return data
+  },
 }
 
 export default studyService

@@ -1,19 +1,25 @@
 import api from './api'
 
 const analyticsService = {
-    getTopicPerformance: async (category) => {
-        const url = category
-            ? `/api/analytics/topic-performance?category=${encodeURIComponent(category)}`
-            : '/api/analytics/topic-performance'
+  getSummary: async () => {
+    const { data } = await api.get('/api/analytics/summary')
+    return data
+  },
 
-        const response = await api.get(url)
-        return response.data
-    },
+  getWeakAreas: async () => {
+    const { data } = await api.get('/api/analytics/weak-areas')
+    return data
+  },
 
-    getWeeklyProgress: async (weeks = 7) => {
-        const response = await api.get(`/api/analytics/weekly-progress?weeks=${weeks}`)
-        return response.data
-    }
+  getCategoryBreakdown: async () => {
+    const { data } = await api.get('/api/analytics/category-breakdown')
+    return data
+  },
+
+  getRecentActivity: async (days = 30) => {
+    const { data } = await api.get('/api/analytics/recent-activity', { params: { days } })
+    return data
+  },
 }
 
 export default analyticsService
