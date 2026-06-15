@@ -223,4 +223,138 @@ const getWeeklyProgress = async (req, res, next) => {
     }
 }
 
-module.exports = { getTopicPerformance, getWeeklyProgress }
+module.exports = { getTopicPerformance, getWeeklyProgress, getSummary, getWeakAreas, getCategoryBreakdown, getRecentActivity }
+
+/**
+ * @desc    Dashboard summary stats
+ * @route   GET /api/analytics/summary
+ */
+async function getSummary(req, res, next) {
+  try {
+    const userId = req.user._id
+    const [overall] = await StudySession.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: null,
+          totalSessions: { $count: {} },
+          totalProblems: { $sum: '$problemsSolved' },
+          totalMinutes: { $sum: '$timeSpent' },
+          topics: { $addToSet: '$topic' },
+        },
+      },
+    ])
+    const user = await require('../models/User').findById(userId)
+    res.json({
+      success: true,
+      data: {
+        totalSessions: overall?.totalSessions ?? 0,
+        totalProblems: overall?.totalProblems ?? 0,
+        totalHours: overall ? Math.round(overall.totalMinutes / 60 * 10) / 10 : 0,
+        uniqueTopics: overall?.topics?.length ?? 0,
+        currentStreak: user?.currentStreak ?? 0,
+        longestStreak: user?.longestStreak ?? 0,
+      },
+    })
+  } catch (error) { next(error) }
+}
+
+/**
+ * @desc    Compute weak areas (low problems + high time per session)
+ * @route   GET /api/analytics/weak-areas
+ */
+async function getWeakAreas(req, res, next) {
+  try {
+    const data = await StudySession.aggregate([
+      { $match: { userId: req.user._id } },
+      {
+        $group: {
+          _id: '$topic',
+          category: { $first: '$category' },
+          sessions: { $count: {} },
+          totalProblems: { $sum: '$problemsSolved' },
+          totalTime: { $sum: '$timeSpent' },
+          avgTime: { $avg: '$timeSpent' },
+          avgProblems: { $avg: '$problemsSolved' },
+        },
+      },
+      {
+        $addFields: {
+          // Weak = high time per problem OR very few problems solved
+          efficiencyScore: {
+            $cond: [
+              { $gt: ['$avgProblems', 0] },
+              { $divide: ['$avgProblems', '$avgTime'] },
+              0,
+            ],
+          },
+        },
+      },
+      { $sort: { efficiencyScore: 1 } }, // lowest efficiency first
+      { $limit: 10 },
+      {
+        $project: {
+          _id: 0,
+          topic: '$_id',
+          category: 1,
+          sessions: 1,
+          totalProblems: 1,
+          avgTimeMinutes: { $round: ['$avgTime', 0] },
+          avgProblems: { $round: ['$avgProblems', 1] },
+          efficiencyScore: { $round: ['$efficiencyScore', 3] },
+        },
+      },
+    ])
+    res.json({ success: true, data })
+  } catch (error) { next(error) }
+}
+
+/**
+ * @desc    Category breakdown (pie chart data)
+ * @route   GET /api/analytics/category-breakdown
+ */
+async function getCategoryBreakdown(req, res, next) {
+  try {
+    const data = await StudySession.aggregate([
+      { $match: { userId: req.user._id } },
+      {
+        $group: {
+          _id: '$category',
+          sessions: { $count: {} },
+          totalProblems: { $sum: '$problemsSolved' },
+          totalTime: { $sum: '$timeSpent' },
+        },
+      },
+      { $project: { _id: 0, category: '$_id', sessions: 1, totalProblems: 1, totalTime: 1 } },
+      { $sort: { totalProblems: -1 } },
+    ])
+    res.json({ success: true, data })
+  } catch (error) { next(error) }
+}
+
+/**
+ * @desc    Recent daily activity for heatmap
+ * @route   GET /api/analytics/recent-activity
+ */
+async function getRecentActivity(req, res, next) {
+  try {
+    const days = parseInt(req.query.days) || 30
+    const since = new Date()
+    since.setDate(since.getDate() - days)
+
+    const data = await StudySession.aggregate([
+      { $match: { userId: req.user._id, date: { $gte: since } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          sessions: { $count: {} },
+          problems: { $sum: '$problemsSolved' },
+          minutes: { $sum: '$timeSpent' },
+        },
+      },
+      { $project: { _id: 0, date: '$_id', sessions: 1, problems: 1, minutes: 1 } },
+      { $sort: { date: 1 } },
+    ])
+    res.json({ success: true, data })
+  } catch (error) { next(error) }
+}

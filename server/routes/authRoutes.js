@@ -1,64 +1,24 @@
 const express = require('express')
 const router = express.Router()
-const { body } = require('express-validator')
-const validate = require('../middleware/validate')
+const {
+  register, login, logout, refreshToken,
+  getMe, verifyEmail, resendVerification,
+  forgotPassword, resetPassword,
+} = require('../controllers/authController')
 const { protect } = require('../middleware/auth')
-const { register, login, getMe, verifyEmail, resendVerification, forgotPassword, resetPassword } = require('../controllers/authController')
+const { validate, schemas } = require('../middleware/validate')
 
-// POST /api/auth/register
-router.post(
-    '/register',
-    [
-        body('name').trim().notEmpty().withMessage('Name is required'),
-        body('email').isEmail().normalizeEmail().withMessage('Provide a valid email'),
-        body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    ],
-    validate,
-    register
-)
-
-// POST /api/auth/login
-router.post(
-    '/login',
-    [
-        body('email').isEmail().normalizeEmail().withMessage('Provide a valid email'),
-        body('password').notEmpty().withMessage('Password is required'),
-    ],
-    validate,
-    login
-)
-
-// GET /api/auth/verify-email?token=xxx
+// Public routes
+router.post('/register', validate(schemas.register), register)
+router.post('/login', validate(schemas.login), login)
+router.post('/logout', logout)
+router.post('/refresh', refreshToken)
 router.get('/verify-email', verifyEmail)
+router.post('/resend-verification', validate(schemas.forgotPassword), resendVerification)
+router.post('/forgot-password', validate(schemas.forgotPassword), forgotPassword)
+router.post('/reset-password', validate(schemas.resetPassword), resetPassword)
 
-// POST /api/auth/resend-verification
-router.post(
-    '/resend-verification',
-    [body('email').isEmail().normalizeEmail().withMessage('Provide a valid email')],
-    validate,
-    resendVerification
-)
-
-// GET /api/auth/me (protected)
+// Private routes
 router.get('/me', protect, getMe)
-
-// POST /api/auth/forgot-password
-router.post(
-    '/forgot-password',
-    [body('email').isEmail().normalizeEmail().withMessage('Provide a valid email')],
-    validate,
-    forgotPassword
-)
-
-// POST /api/auth/reset-password
-router.post(
-    '/reset-password',
-    [
-        body('token').notEmpty().withMessage('Reset token is required'),
-        body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    ],
-    validate,
-    resetPassword
-)
 
 module.exports = router
