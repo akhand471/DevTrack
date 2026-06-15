@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
 import { allDsaTopics } from '../data/dsaTopics'
 import studyService from '../services/studyService'
+import { useMotivation } from '../hooks/useMotivation'
 
 const StudyLog = () => {
+  const { updateXP } = useMotivation()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -91,9 +93,13 @@ const StudyLog = () => {
 
       const res = await studyService.logSession(sessionData)
       if (res.success) {
+        // Award XP for this session
+        updateXP(formData.difficulty, formData.category, parseInt(formData.problems) || 0)
         setSessions([res.data, ...sessions])
         setFormData({ topic: '', category: 'DSA', platform: 'LeetCode', problems: '', difficulty: 'Medium', time: '' })
         setFormOpen(false)
+        // Notify Dashboard to re-fetch stats immediately
+        window.dispatchEvent(new Event('devtrack:session-logged'))
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to log session')
