@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { X, BarChart3, BookOpen, TrendingUp, User, Home, Target, Zap, AlertCircle } from 'lucide-react'
+import XPBar from './XPBar'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation()
@@ -68,6 +69,11 @@ const Sidebar = ({ isOpen, onClose }) => {
             )
           })}
         </nav>
+
+        {/* Compact XP Bar */}
+        <div className="pb-2">
+          <XPBar compact />
+        </div>
 
         {/* Sidebar Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-dark-700/50">
