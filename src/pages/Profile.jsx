@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { User, Github, Mail, Edit2, Save, X, Award, Flame, Target, Loader } from 'lucide-react'
 import userService from '../services/userService'
+import analyticsService from '../services/analyticsService'
+import XPBar from '../components/XPBar'
 
 const ToggleSwitch = ({ checked, onChange, label }) => (
   <button
@@ -53,13 +55,15 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true)
-        const [profileRes, statsRes] = await Promise.all([
+              const [profileRes, statsRes, summaryRes] = await Promise.all([
           userService.getProfile(),
           userService.getStats(),
+          analyticsService.getSummary(),
         ])
 
         const p = profileRes.data || {}
         const s = statsRes.data || {}
+        const sum = summaryRes?.data || {}
 
         setProfile({
           name: p.name || '',
@@ -67,10 +71,10 @@ const Profile = () => {
           githubUsername: p.githubUsername || '',
           bio: p.bio || '',
           location: p.location || '',
-          currentStreak: s.currentStreak || p.currentStreak || 0,
-          longestStreak: s.longestStreak || p.longestStreak || 0,
-          totalProblems: s.totalProblems || 0,
-          totalHours: s.totalHours || 0,
+          currentStreak: s.currentStreak || p.currentStreak || sum.currentStreak || 0,
+          longestStreak: s.longestStreak || p.longestStreak || sum.longestStreak || 0,
+          totalProblems: sum.totalProblems || 0,
+          totalHours: sum.totalHours || 0,
         })
       } catch (err) {
         setError('Failed to load profile')
@@ -281,6 +285,9 @@ const Profile = () => {
           <p className="text-xs text-gray-500">hours</p>
         </div>
       </div>
+
+      {/* XP Level Bar */}
+      <XPBar />
 
       {/* Achievements */}
       <div className="card-glass rounded-xl p-8">

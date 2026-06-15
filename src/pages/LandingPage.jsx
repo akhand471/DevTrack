@@ -1,8 +1,17 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Zap, Target, TrendingUp, Code2, BarChart3, BookOpen } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const LandingPage = () => {
+  const { loginAsDemo } = useAuth()
+  const navigate = useNavigate()
+
+  const handleTryDemo = () => {
+    loginAsDemo()
+    navigate('/dashboard')
+  }
+
   return (
     <div className="w-full">
       {/* Landing Navbar */}
@@ -13,13 +22,19 @@ const LandingPage = () => {
               <Code2 size={24} className="text-primary-500" />
               <span>DevTrack</span>
             </Link>
-            <Link
-              to="/dashboard"
-              className="btn-primary text-sm py-2 px-4 flex items-center gap-2"
-            >
-              Open Dashboard
-              <ArrowRight size={16} />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link to="/login" className="btn-secondary text-sm py-2 px-4">
+                Sign In
+              </Link>
+              <button
+                onClick={handleTryDemo}
+                id="landing-try-demo-btn"
+                className="btn-primary text-sm py-2 px-4 flex items-center gap-2"
+              >
+                Try Demo
+                <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -44,13 +59,15 @@ const LandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Link
-              to="/dashboard"
+            <button
+              onClick={handleTryDemo}
+              id="hero-try-demo-btn"
               className="btn-primary flex items-center justify-center gap-2 group text-lg px-8 py-4"
             >
-              Get Started
+              <Zap size={20} />
+              Try Demo Free
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
+            </button>
             <a href="#features" className="btn-secondary text-lg px-8 py-4 text-center">
               Learn More
             </a>
@@ -72,14 +89,37 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Hero Image/Visual */}
+          {/* Hero Visual */}
           <div className="rounded-xl overflow-hidden border border-dark-700/50 card-glass p-1 mb-20">
             <div className="bg-gradient-to-br from-primary-500/20 via-dark-800 to-transparent rounded-lg h-96 md:h-[500px] flex items-center justify-center relative">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(14,165,233,0.1)_0%,transparent_70%)]" />
-              <div className="text-center relative z-10">
-                <BarChart3 size={80} className="mx-auto mb-4 text-primary-500/50" />
-                <p className="text-gray-500 text-lg font-medium">Dashboard Preview</p>
-                <p className="text-gray-600 text-sm mt-1">Track • Analyze • Improve</p>
+              {/* Mini mock dashboard preview */}
+              <div className="relative z-10 w-full max-w-2xl px-8">
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {[
+                    { label: 'Problems Solved', val: '241', color: 'text-primary-400' },
+                    { label: 'Study Hours', val: '94h', color: 'text-emerald-400' },
+                    { label: 'Sessions', val: '15', color: 'text-amber-400' },
+                    { label: 'Topics', val: '15', color: 'text-rose-400' },
+                  ].map((item, i) => (
+                    <div key={i} className="bg-dark-800/70 border border-dark-700/50 rounded-lg p-4 text-left">
+                      <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                      <p className={`text-2xl font-bold ${item.color}`}>{item.val}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-dark-800/70 border border-dark-700/50 rounded-lg p-4">
+                  <p className="text-xs text-gray-500 mb-3">Weekly Progress</p>
+                  <div className="flex items-end gap-2 h-16">
+                    {[18, 25, 22, 30, 35, 40, 38].map((val, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 bg-primary-500/30 hover:bg-primary-500/60 rounded-t transition-all duration-300"
+                        style={{ height: `${(val / 40) * 100}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -152,10 +192,15 @@ const LandingPage = () => {
           <p className="section-subtitle mb-8">
             Start tracking your progress today and level up your coding skills
           </p>
-          <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 group text-lg px-8 py-4">
-            Launch Dashboard
+          <button
+            onClick={handleTryDemo}
+            id="cta-try-demo-btn"
+            className="btn-primary inline-flex items-center gap-2 group text-lg px-8 py-4"
+          >
+            <Zap size={20} />
+            Launch Demo Dashboard
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          </button>
         </div>
       </section>
 

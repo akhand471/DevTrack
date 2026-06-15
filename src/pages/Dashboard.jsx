@@ -7,6 +7,10 @@ import HeatmapChart from '../components/HeatmapChart'
 import QuickStatsBar from '../components/QuickStatsBar'
 import ProgressTracker from '../components/ProgressTracker'
 import ComparisonChart from '../components/ComparisonChart'
+import MotivationToast from '../components/MotivationToast'
+import MotivationBars from '../components/MotivationBars'
+import StreakTracker from '../components/StreakTracker'
+import AIRecommendations from '../components/AIRecommendations'
 import { useAuth } from '../context/AuthContext'
 import analyticsService from '../services/analyticsService'
 import studyService from '../services/studyService'
@@ -29,63 +33,69 @@ const Dashboard = () => {
   const [weeklyProgress, setWeeklyProgress] = useState([])
   const [goalsStats, setGoalsStats] = useState({ completed: 0, total: 0 })
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true)
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
 
-        // Fetch all needed data in parallel
-        const [perfRes, progressRes, sessionsRes, allSessionsRes, goalsRes] = await Promise.all([
-          analyticsService.getTopicPerformance(),
-          analyticsService.getWeeklyProgress(),
-          studyService.getSessions({ limit: 4 }), // Get 4 most recent
-          studyService.getSessions(), // Get all sessions for heatmap
-          goalsService.getGoals() // Get goals for quick stats
-        ])
+      const [perfRes, progressRes, sessionsRes, allSessionsRes, goalsRes, summaryRes] = await Promise.all([
+        analyticsService.getTopicPerformance(),
+        analyticsService.getWeeklyProgress(),
+        studyService.getSessions({ limit: 4 }),
+        studyService.getSessions(),
+        goalsService.getGoals(),
+        analyticsService.getSummary(),          // real-time stats
+      ])
 
-        if (perfRes.success) {
-          setStatsData(perfRes.data.overallStats)
-          setTopicPerformance(perfRes.data.topicPerformance.slice(0, 4)) // Top 4
-        }
-
-        if (progressRes.success) {
-          // Calculate category percentages
-          const totalCatProblems = progressRes.data.categoryBreakdown.reduce((acc, curr) => acc + curr.totalProblems, 0)
-
-          const breakdown = progressRes.data.categoryBreakdown.map(cat => ({
-            name: cat.category,
-            problems: cat.totalProblems,
-            percentage: totalCatProblems ? Math.round((cat.totalProblems / totalCatProblems) * 100) : 0,
-            color: cat.category === 'DSA' ? 'bg-blue-500' : cat.category === 'Core CS' ? 'bg-purple-500' : 'bg-green-500'
-          }))
-
-          setCategoryBreakdown(breakdown.sort((a, b) => b.problems - a.problems))
-          setWeeklyProgress(progressRes.data.weeklyProgress || progressRes.data)
-        }
-
-        if (sessionsRes.success) {
-          setRecentSessions(sessionsRes.data)
-        }
-
-        if (allSessionsRes.success) {
-          setAllSessions(allSessionsRes.data)
-        }
-
-        if (goalsRes.success) {
-          const goals = goalsRes.data
-          const completed = goals.filter(g => g.status === 'Completed').length
-          setGoalsStats({ completed, total: goals.length })
-        }
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
+      // Prefer real-time summary for stat cards
+      if (summaryRes?.success) {
+        setStatsData({
+          totalProblems: summaryRes.data.totalProblems,
+          totalTimeHours: summaryRes.data.totalHours,
+          uniqueTopicsCount: summaryRes.data.uniqueTopics,
+          totalSessions: summaryRes.data.totalSessions,
+        })
+      } else if (perfRes.success) {
+        setStatsData(perfRes.data.overallStats)
       }
-    }
 
+      if (perfRes.success) {
+        setTopicPerformance(perfRes.data.topicPerformance.slice(0, 4))
+      }
+
+      if (progressRes.success) {
+        const totalCatProblems = progressRes.data.categoryBreakdown.reduce((acc, curr) => acc + curr.totalProblems, 0)
+        const breakdown = progressRes.data.categoryBreakdown.map(cat => ({
+          name: cat.category,
+          problems: cat.totalProblems,
+          percentage: totalCatProblems ? Math.round((cat.totalProblems / totalCatProblems) * 100) : 0,
+          color: cat.category === 'DSA' ? 'bg-blue-500' : cat.category === 'Core CS' ? 'bg-purple-500' : 'bg-green-500'
+        }))
+        setCategoryBreakdown(breakdown.sort((a, b) => b.problems - a.problems))
+        setWeeklyProgress(progressRes.data.weeklyProgress || progressRes.data)
+      }
+
+      if (sessionsRes.success) setRecentSessions(sessionsRes.data)
+      if (allSessionsRes.success) setAllSessions(allSessionsRes.data)
+
+      if (goalsRes.success) {
+        const goals = goalsRes.data
+        const completed = goals.filter(g => g.status === 'Completed').length
+        setGoalsStats({ completed, total: goals.length })
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchDashboardData()
+    // Re-fetch whenever a session is logged anywhere in the app
+    window.addEventListener('devtrack:session-logged', fetchDashboardData)
+    return () => window.removeEventListener('devtrack:session-logged', fetchDashboardData)
   }, [])
+
 
   // Map to the format StatsCard expects
   const stats = [
@@ -135,6 +145,9 @@ const Dashboard = () => {
         <p className="text-gray-400">Track your coding progress and level up your interview skills</p>
       </div>
 
+      {/* Motivation Toast — top nudge */}
+      <MotivationToast />
+
       {/* Quick Stats Bar */}
       <QuickStatsBar stats={{
         streak: user?.currentStreak || 0,
@@ -148,6 +161,12 @@ const Dashboard = () => {
         {stats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
+      </div>
+
+      {/* Motivation Row — progress bars + streak */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MotivationBars />
+        <StreakTracker />
       </div>
 
       {/* Charts Row */}
@@ -164,9 +183,40 @@ const Dashboard = () => {
           } />
         </div>
 
-        {/* Category Breakdown */}
+        {/* Study Breakdown */}
         <div className="card-glass rounded-lg p-6">
           <h2 className="text-xl font-bold mb-4">Study Breakdown</h2>
+          {categoryBreakdown.length > 0 ? (
+            <div className="space-y-4">
+              {categoryBreakdown.map((item, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">{item.name}</span>
+                    <span className="text-xs text-gray-500">{item.problems} units ({item.percentage}%)</span>
+                  </div>
+                  <div className="w-full bg-dark-700 rounded-full h-2">
+                    <div
+                      className={`${item.color} h-2 rounded-full transition-all`}
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm italic">No data yet. Log some sessions!</p>
+          )}
+        </div>
+      </div>
+
+      {/* AI Coach + Spaced Repetition */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <AIRecommendations />
+        </div>
+        {/* Study Breakdown (moved to sidebar of AI row) */}
+        <div className="card-glass rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-4">Session Breakdown</h2>
           {categoryBreakdown.length > 0 ? (
             <div className="space-y-4">
               {categoryBreakdown.map((item, idx) => (
