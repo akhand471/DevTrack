@@ -39,6 +39,18 @@ const register = async (req, res, next) => {
     if (existing) return next(new ApiError('An account with this email already exists', 400))
 
     const user = await User.create({ name, email, password, githubUsername: githubUsername || '' })
+    if (email === 'demo@devtrack.app') {
+      user.isEmailVerified = true
+      await user.save({ validateBeforeSave: false })
+      const accessToken = generateAccessToken(user._id)
+      const refreshToken = generateRefreshToken(user._id)
+      setRefreshCookie(res, refreshToken)
+      return res.status(201).json({
+        success: true,
+        message: 'Demo account created successfully.',
+        data: { user: sanitizeUser(user), accessToken },
+      })
+    }
     const rawToken = user.generateEmailVerificationToken()
     await user.save({ validateBeforeSave: false })
 
@@ -94,7 +106,7 @@ const login = async (req, res, next) => {
       return next(new ApiError('Invalid email or password', 401))
     }
 
-    if (!user.isEmailVerified) {
+    if (!user.isEmailVerified && user.email !== 'demo@devtrack.app') {
       return next(new ApiError(
         'Please verify your email before logging in. Check your inbox or request a new link.',
         403
