@@ -6,6 +6,16 @@ const analyticsService = {
     return data
   },
 
+  getTopicPerformance: async () => {
+    const { data } = await api.get('/api/analytics/topic-performance')
+    return data
+  },
+
+  getWeeklyProgress: async () => {
+    const { data } = await api.get('/api/analytics/weekly-progress')
+    return data
+  },
+
   getWeakAreas: async () => {
     const { data } = await api.get('/api/analytics/weak-areas')
     return data
