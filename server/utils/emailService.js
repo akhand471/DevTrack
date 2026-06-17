@@ -4,14 +4,16 @@ const nodemailer = require('nodemailer')
  * Create the nodemailer transporter using env variables
  */
 const createTransporter = () => {
+  const host = process.env.SMTP_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com'
+  const port = parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS
+
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // TLS
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
   })
 }
 
@@ -63,8 +65,12 @@ const sendVerificationEmail = async (toEmail, name, verificationUrl) => {
     </html>
   `
 
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER
+  const fromEmail = process.env.FROM_EMAIL || user || 'noreply@devtrack.app'
+  const fromName = process.env.FROM_NAME || 'DevTrack'
+
   await transporter.sendMail({
-    from: `"DevTrack" <${process.env.EMAIL_USER}>`,
+    from: `"${fromName}" <${fromEmail}>`,
     to: toEmail,
     subject: '✅ Verify your DevTrack email',
     html,
@@ -119,8 +125,12 @@ const sendPasswordResetEmail = async (toEmail, name, resetUrl) => {
     </html>
   `
 
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER
+  const fromEmail = process.env.FROM_EMAIL || user || 'noreply@devtrack.app'
+  const fromName = process.env.FROM_NAME || 'DevTrack'
+
   await transporter.sendMail({
-    from: `"DevTrack" <${process.env.EMAIL_USER}>`,
+    from: `"${fromName}" <${fromEmail}>`,
     to: toEmail,
     subject: '🔐 Reset your DevTrack password',
     html,

@@ -56,6 +56,26 @@ const register = async (req, res, next) => {
 
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${rawToken}`
 
+    // If SMTP is not configured, auto-verify user immediately (dev and prod)
+    const hasSmtpConfig = process.env.SMTP_USER || process.env.EMAIL_USER
+    if (!hasSmtpConfig) {
+      user.isEmailVerified = true
+      user.emailVerificationToken = undefined
+      user.emailVerificationExpires = undefined
+      await user.save({ validateBeforeSave: false })
+
+      const accessToken = generateAccessToken(user._id)
+      const refreshToken = generateRefreshToken(user._id)
+      setRefreshCookie(res, refreshToken)
+
+      logger.info(`[AUTO-VERIFY] No SMTP config, auto-verified user: ${user.email}`)
+      return res.status(201).json({
+        success: true,
+        message: 'Account created & auto-verified (no SMTP configured).',
+        data: { user: sanitizeUser(user), accessToken },
+      })
+    }
+
     try {
       await sendVerificationEmail(user.email, user.name, verificationUrl)
       return res.status(201).json({
@@ -65,7 +85,7 @@ const register = async (req, res, next) => {
       })
     } catch (emailErr) {
       if (process.env.NODE_ENV === 'development') {
-        // Auto-verify in dev when no SMTP is configured
+        // Auto-verify in dev when no SMTP is configured (fallback)
         user.isEmailVerified = true
         user.emailVerificationToken = undefined
         user.emailVerificationExpires = undefined
@@ -257,6 +277,15 @@ const forgotPassword = async (req, res, next) => {
     const rawToken = user.generatePasswordResetToken()
     await user.save({ validateBeforeSave: false })
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`
+
+    const hasSmtpConfig = process.env.SMTP_USER || process.env.EMAIL_USER
+    if (!hasSmtpConfig) {
+      logger.info(`[FORGOT-PASSWORD] SMTP not configured. Local Simulation: Reset url is ${resetUrl}`)
+      return res.json({
+        success: true,
+        message: 'SMTP is not configured. (Local dev simulation: reset URL logged)',
+      })
+    }
 
     try {
       await sendPasswordResetEmail(user.email, user.name, resetUrl)
