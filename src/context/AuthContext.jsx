@@ -132,44 +132,25 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const loginAsDemo = async () => {
-    try {
-      // 1. Try to login with demo credentials
-      const { data } = await api.post('/api/auth/login', {
-        email: 'demo@devtrack.app',
-        password: 'demopassword123',
-      })
-      const { user: userData, accessToken: token } = data.data
-      setUser(userData)
-      setAccessToken(token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      scheduleRefresh(token)
-      return userData
-    } catch (err) {
-      // 2. If it fails, register the demo user first
-      try {
-        await api.post('/api/auth/register', {
-          name: 'Demo User',
-          email: 'demo@devtrack.app',
-          password: 'demopassword123',
-        })
-        
-        // 3. Login now that registration has succeeded
-        const { data: loginData } = await api.post('/api/auth/login', {
-          email: 'demo@devtrack.app',
-          password: 'demopassword123',
-        })
-        const { user: userData, accessToken: token } = loginData.data
-        setUser(userData)
-        setAccessToken(token)
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-        scheduleRefresh(token)
-        return userData
-      } catch (regErr) {
-        console.error('Demo login/register failed:', regErr)
-        throw regErr
-      }
+  /**
+   * loginAsDemo — sets a local demo user instantly, NO backend call needed.
+   * Works even when the server is cold-starting or offline.
+   * The dashboard will show empty states (real data requires a real account).
+   */
+  const loginAsDemo = () => {
+    const demoUser = {
+      _id: 'demo',
+      name: 'Demo User',
+      email: 'demo@devtrack.app',
+      isDemo: true,
+      currentStreak: 0,
+      longestStreak: 0,
     }
+    setUser(demoUser)
+    // No access token — demo user has no backend session.
+    // API calls from the dashboard will 401, but that's fine:
+    // all data sections already show empty states when there's no data.
+    return demoUser
   }
 
   const value = {

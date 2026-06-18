@@ -7,7 +7,6 @@ const Login = () => {
     const [formData, setFormData] = useState({ email: '', password: '' })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
-    const [demoLoading, setDemoLoading] = useState(false)
     const navigate = useNavigate()
     const { login, loginAsDemo } = useAuth()
 
@@ -35,17 +34,9 @@ const Login = () => {
         }
     }
 
-    const handleDemoLogin = async () => {
-        setDemoLoading(true)
-        setError('')
-        try {
-            await loginAsDemo()
-            navigate('/dashboard')
-        } catch (err) {
-            setError('Demo login failed. Please try again.')
-        } finally {
-            setDemoLoading(false)
-        }
+    const handleDemoLogin = () => {
+        loginAsDemo()
+        navigate('/dashboard')
     }
 
     return (
@@ -66,12 +57,11 @@ const Login = () => {
                 <button
                     onClick={handleDemoLogin}
                     id="demo-login-btn"
-                    disabled={demoLoading || loading}
-                    className="w-full mb-6 py-3 px-6 flex items-center justify-center gap-3 rounded-lg font-semibold text-white transition-all duration-200 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.98] group disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full mb-6 py-3 px-6 flex items-center justify-center gap-3 rounded-lg font-semibold text-white transition-all duration-200 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.98] group"
                 >
                     <Zap size={18} className="group-hover:animate-pulse" />
-                    {demoLoading ? 'Loading demo...' : 'Try Demo — No signup needed'}
-                    {!demoLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+                    Try Demo — No signup needed
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
 
                 <div className="flex items-center gap-3 mb-6">
