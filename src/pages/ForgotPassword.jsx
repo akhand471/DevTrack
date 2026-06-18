@@ -23,7 +23,11 @@ const ForgotPassword = () => {
             await api.post('/api/auth/forgot-password', { email })
             setSent(true)
         } catch (err) {
-            setError(err.response?.data?.error || 'Something went wrong. Please try again.')
+            setError(
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                'Something went wrong. Please try again.'
+            )
         } finally {
             setLoading(false)
         }

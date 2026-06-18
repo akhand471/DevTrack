@@ -37,16 +37,22 @@ const ResetPassword = () => {
             const res = await api.post('/api/auth/reset-password', { token, password })
 
             if (res.data.success) {
-                // Auto-login
-                const { token: jwt, ...userData } = res.data.data
-                localStorage.setItem('auth_token', jwt)
-                setUserFromToken(userData)
-
+                // Auto-login with the returned token
+                const { user: userData, accessToken: jwt } = res.data.data
+                if (jwt && userData) {
+                    // Set auth header so subsequent API calls work immediately
+                    api.defaults.headers.common['Authorization'] = `Bearer ${jwt}`
+                    setUserFromToken(userData, jwt)
+                }
                 setStatus('success')
                 setTimeout(() => navigate('/dashboard'), 2500)
             }
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to reset password. The link may have expired.')
+            setError(
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                'Failed to reset password. The link may have expired.'
+            )
             setStatus('error')
         } finally {
             setLoading(false)
