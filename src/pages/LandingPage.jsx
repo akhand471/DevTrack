@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Zap, Target, TrendingUp, Code2, BarChart3, BookOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -6,10 +6,18 @@ import { useAuth } from '../context/AuthContext'
 const LandingPage = () => {
   const { loginAsDemo } = useAuth()
   const navigate = useNavigate()
+  const [demoLoading, setDemoLoading] = useState(false)
 
-  const handleTryDemo = () => {
-    loginAsDemo()
-    navigate('/dashboard')
+  const handleTryDemo = async () => {
+    setDemoLoading(true)
+    try {
+      await loginAsDemo()
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Demo login failed:', err)
+    } finally {
+      setDemoLoading(false)
+    }
   }
 
   return (
@@ -29,10 +37,11 @@ const LandingPage = () => {
               <button
                 onClick={handleTryDemo}
                 id="landing-try-demo-btn"
-                className="btn-primary text-sm py-2 px-4 flex items-center gap-2"
+                disabled={demoLoading}
+                className="btn-primary text-sm py-2 px-4 flex items-center gap-2 disabled:opacity-60"
               >
-                Try Demo
-                <ArrowRight size={16} />
+                {demoLoading ? 'Loading...' : 'Try Demo'}
+                {!demoLoading && <ArrowRight size={16} />}
               </button>
             </div>
           </div>
@@ -62,11 +71,12 @@ const LandingPage = () => {
             <button
               onClick={handleTryDemo}
               id="hero-try-demo-btn"
-              className="btn-primary flex items-center justify-center gap-2 group text-lg px-8 py-4"
+              disabled={demoLoading}
+              className="btn-primary flex items-center justify-center gap-2 group text-lg px-8 py-4 disabled:opacity-60"
             >
               <Zap size={20} />
-              Try Demo Free
-              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              {demoLoading ? 'Loading demo...' : 'Try Demo Free'}
+              {!demoLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
             </button>
             <a href="#features" className="btn-secondary text-lg px-8 py-4 text-center">
               Learn More
@@ -195,11 +205,12 @@ const LandingPage = () => {
           <button
             onClick={handleTryDemo}
             id="cta-try-demo-btn"
-            className="btn-primary inline-flex items-center gap-2 group text-lg px-8 py-4"
+            disabled={demoLoading}
+            className="btn-primary inline-flex items-center gap-2 group text-lg px-8 py-4 disabled:opacity-60"
           >
             <Zap size={20} />
-            Launch Demo Dashboard
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            {demoLoading ? 'Loading...' : 'Launch Demo Dashboard'}
+            {!demoLoading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
           </button>
         </div>
       </section>
