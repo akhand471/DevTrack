@@ -35,14 +35,19 @@ const Register = () => {
             const { confirmPassword, ...dataToSend } = formData
             const res = await register(dataToSend)
 
-            // Dev mode: token returned → go straight to dashboard
-            if (res.data?.token) {
+            // Server auto-verified (no SMTP) → token returned → go straight to dashboard
+            if (res.data?.accessToken) {
                 return navigate('/dashboard')
             }
-            // Production: show check-email screen
+            // SMTP configured in production → show check-email screen
             setRegisteredEmail(formData.email)
         } catch (err) {
-            setError(err.message || 'Failed to register')
+            setError(
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'Failed to register. Please try again.'
+            )
         } finally {
             setLoading(false)
         }

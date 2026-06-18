@@ -24,7 +24,12 @@ const Login = () => {
             await login(formData)
             navigate('/dashboard')
         } catch (err) {
-            setError(err.message || 'Failed to login')
+            setError(
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'Failed to login. Please try again.'
+            )
         } finally {
             setLoading(false)
         }
